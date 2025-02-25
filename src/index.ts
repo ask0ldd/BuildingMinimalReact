@@ -24,3 +24,40 @@ class SPA{
           },
         })
     }
+
+    static render(element : ISPAElement, container : HTMLElement){
+        const dom =
+        element.type == "TEXT_ELEMENT"
+        ? document.createTextNode(element.props.nodeValue as string)
+        : document.createElement(element.type)
+          
+        if(element.type !== "TEXT_ELEMENT") element.props.children.forEach(child =>
+            {
+                if(typeof child == "object" && dom instanceof HTMLElement) return this.render(child, dom)
+            }
+        )
+
+        container.appendChild(dom)
+    }
+}
+
+console.log(JSON.stringify(SPA.createElement(
+    "div", 
+    {id : 'test', value : '2'}, 
+    {type : 'span', props : {
+        children : ["spanValue"]
+    }}
+)))
+
+document.body.onload = addToRoot;
+
+function addToRoot() {
+    const root = document.body.querySelector("#root")
+    if(root) SPA.render(SPA.createElement(
+        "div", 
+        {id : 'test', value : '2'}, 
+        {type : 'span', props : {
+            children : ["spanValue"]
+        }}
+    ), root as HTMLElement)
+}
