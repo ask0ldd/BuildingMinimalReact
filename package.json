@@ -1,6 +1,7 @@
 {
   "scripts" : {
-    "start" : "tsc && node dist/index.js"
+    "start" : "tsc && node server.js",
+    "watch" : "npx tsc --watch"
   },
   "dependencies": {
     "typescript": "^5.7.3"
