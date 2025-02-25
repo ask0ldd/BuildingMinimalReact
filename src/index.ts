@@ -1,53 +1,49 @@
-import { ISPAElement } from "./interfaces/ISPAElement";
+import { ISPAElement, ISPATextElement } from "./interfaces/ISPAElement";
 
 class SPA{
-    static createElement(type : string, props : object | null = null, ...children : (ISPAElement | string | number)[]) : ISPAElement{
-        return ({
+    
+    static createElement(type : string, props : object | null = null, ...children : (ISPAElement | ISPATextElement | string | number)[]) : ISPAElement{
+        const elt = ({
             type,
             props : {
                 ...props,
-                children: children.map(child =>
-                    typeof child === "object"
-                      ? this.createElement(child.type, null, ...child.props.children)
+                children: children.map(child => {
+                    return typeof child === "object"
+                      ? this.createElement(child.type, child.props, ...child.props.children)
                       : this.createTextElement(child.toString())
+                    }
                 ),
             }
         })
+        return elt
     }
 
-    static createTextElement(text : string) : ISPAElement {
-        return ({
-          type: "TEXT_ELEMENT",
+    static createTextElement(text : string) : ISPATextElement {
+        const elt = ({
+          type: "TEXT_ELEMENT" as "TEXT_ELEMENT",
           props: {
             nodeValue: text,
             children: [],
           },
         })
+        return elt
     }
 
-    static render(element : ISPAElement, container : HTMLElement){
+    static render(element : ISPAElement | ISPATextElement, container : HTMLElement){
         const dom =
         element.type == "TEXT_ELEMENT"
-        ? document.createTextNode(element.props.nodeValue as string)
+        ? document.createTextNode((element as ISPATextElement).props.nodeValue)
         : document.createElement(element.type)
           
-        if(element.type !== "TEXT_ELEMENT") element.props.children.forEach(child =>
+        if(dom instanceof HTMLElement) element.props.children.forEach(child =>
             {
-                if(typeof child == "object" && dom instanceof HTMLElement) return this.render(child, dom)
+                if(typeof child == "object") return this.render(child, dom)
             }
         )
 
         container.appendChild(dom)
     }
 }
-
-console.log(JSON.stringify(SPA.createElement(
-    "div", 
-    {id : 'test', value : '2'}, 
-    {type : 'span', props : {
-        children : ["spanValue"]
-    }}
-)))
 
 document.body.onload = addToRoot;
 
@@ -56,8 +52,15 @@ function addToRoot() {
     if(root) SPA.render(SPA.createElement(
         "div", 
         {id : 'test', value : '2'}, 
-        {type : 'span', props : {
-            children : ["spanValue"]
-        }}
+        SPA.createElement(
+            "div",
+            null,
+            'hello',
+            SPA.createElement(
+                "span",
+                null,
+                "spanValue",
+            )
+        )
     ), root as HTMLElement)
 }
