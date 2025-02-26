@@ -34,23 +34,21 @@ class SPA{
         element.type == "TEXT_ELEMENT"
         ? document.createTextNode((element as ISPATextElement).props.nodeValue)
         : document.createElement(element.type)
+          
+        if(dom instanceof HTMLElement) {
 
-        if(dom instanceof HTMLElement) Object.keys(element.props)
+            Object.keys(element.props)
             .filter(key => key !== "children")
             .forEach(name => {
-            (dom as HTMLElement).setAttribute(name, JSON.stringify(element.props[name]));
-            // dom[name] = element.props[name]
-            /*dom = Object.assign(dom, {
-                ...dom,
-                ...element.props
-            });*/
-        })
-          
-        if(dom instanceof HTMLElement) element.props.children.forEach(child =>
-            {
-                if(typeof child == "object" && dom instanceof HTMLElement) return this.render(child, dom)
-            }
-        )
+                dom.setAttribute(name, JSON.stringify(element.props[name]));
+            })
+
+            element.props.children.forEach(child =>
+                {
+                    if(typeof child == "object") return this.render(child, dom)
+                }
+            )
+        }
 
         container.appendChild(dom)
     }
