@@ -67,7 +67,8 @@ class SPA{
             props: {
               children: [element],
             },
-            parent : element.parent
+            parent : element.parent,
+            sibling : element.sibling
         }
     }
 
@@ -94,15 +95,22 @@ class SPA{
         let shouldYield = false
         while (this.nextUnitOfWork && !shouldYield) {
           this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
+          // keep working if deadline is not close yet
           shouldYield = deadline.timeRemaining() < 1
         }
-        // the browser will run the callback when the main thread is idle
+        // the browser will run the callback
+        // when the main thread is idle
         requestIdleCallback(this.workLoop)
     }
 
+    // a fiber has a link to his parent
+    // a parent has a link to his first child
+    // a child has a link to his next sibling
     static performUnitOfWork(fiber : IFiber) {
+        // create the new dom if needed
         if (!fiber.dom) fiber.dom = this.createDom(fiber)
 
+        // append to the current fiber dom to its parent dom
         if (fiber.parent && fiber.parent.dom) fiber.parent.dom.appendChild(fiber.dom)
 
         const elements = fiber.props.children
@@ -119,8 +127,10 @@ class SPA{
                 dom: null,
             }
 
+            // if first child, set as the current fiber main child
             if (index === 0) {
                 fiber.child = newFiber
+            // if not the first one, set as sibling of the previous fiber child
             } else {
                 if(prevSibling) prevSibling.sibling = newFiber
             }
