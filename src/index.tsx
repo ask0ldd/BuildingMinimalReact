@@ -55,17 +55,35 @@ class SPA{
         container.appendChild(dom)
     }
 
-    static splitRender(){
-
+    /*
+        add the element to the DOM
+        create the fibers for the element’s children
+        select the next unit of work
+    */
+    static fractionedRender(element: IFiber, container : HTMLElement){
+        this.nextUnitOfWork = {
+            type : element.type,
+            dom: container,
+            props: {
+              children: [element],
+            },
+            parent : element.parent
+        }
     }
 
     static createDom(fiber : IFiber) {
         const dom =
           fiber.type == "TEXT_ELEMENT"
-            ? document.createTextNode((fiber as IFiber).props.nodeValue)
+            ? document.createTextNode("")
             : document.createElement(fiber.type)
-      
-        // updateDom(dom, {}, fiber.props)
+
+        if(dom instanceof HTMLElement) {
+            Object.keys(fiber.props)
+            .filter(key => key !== "children")
+            .forEach(name => {
+                dom.setAttribute(name, JSON.stringify(fiber.props[name]))
+            })
+        }
       
         return dom
     }
@@ -78,6 +96,7 @@ class SPA{
           this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
           shouldYield = deadline.timeRemaining() < 1
         }
+        // the browser will run the callback when the main thread is idle
         requestIdleCallback(this.workLoop)
     }
 

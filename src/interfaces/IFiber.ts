@@ -3,7 +3,7 @@ export type IFiber = {
     props: {
         children: IFiber[]
         [key: string]: unknown | never[] | string
-        nodeValue: string
+        nodeValue?: string
     }
     child? : IFiber
     parent: IFiber
