@@ -2,7 +2,12 @@ import React from "react";
 import { ISPAElement, ISPATextElement } from "./interfaces/ISPAElement";
 import { IFiber } from "./interfaces/IFiber";
 
+
+let nextUnitOfWork : undefined | IFiber = undefined
+
 class SPA{
+
+    static wipRoot = null
     
     static createElement(type : string, props : object | null = null, ...children : (ISPAElement | ISPATextElement | string | number)[]) : ISPAElement{
         const elt = ({
@@ -60,15 +65,15 @@ class SPA{
         create the fibers for the element’s children
         select the next unit of work
     */
-    static fractionedRender(element: IFiber, container : HTMLElement){
-        this.nextUnitOfWork = {
+    static lazyRender(element: ISPAElement | ISPATextElement, container : HTMLElement){
+        nextUnitOfWork = {
             type : element.type,
             dom: container,
             props: {
               children: [element],
             },
-            parent : element.parent,
-            sibling : element.sibling
+            /*parent : element.parent,
+            sibling : element.sibling*/
         }
     }
 
@@ -89,24 +94,24 @@ class SPA{
         return dom
     }
 
-    static nextUnitOfWork : undefined | IFiber = undefined
-
     static workLoop(deadline : IdleDeadline) {
         let shouldYield = false
-        while (this.nextUnitOfWork && !shouldYield) {
-          this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
+        console.log(JSON.stringify(nextUnitOfWork))
+        while (nextUnitOfWork && !shouldYield) {
+          nextUnitOfWork = SPA.performUnitOfWork(nextUnitOfWork)
           // keep working if deadline is not close yet
           shouldYield = deadline.timeRemaining() < 1
         }
         // the browser will run the callback
         // when the main thread is idle
-        requestIdleCallback(this.workLoop)
+        requestIdleCallback(SPA.workLoop)
     }
 
     // a fiber has a link to his parent
     // a parent has a link to his first child
     // a child has a link to his next sibling
     static performUnitOfWork(fiber : IFiber) {
+        console.log(JSON.stringify(fiber))
         // create the new dom if needed
         if (!fiber.dom) fiber.dom = this.createDom(fiber)
 
@@ -114,50 +119,63 @@ class SPA{
         if (fiber.parent && fiber.parent.dom) fiber.parent.dom.appendChild(fiber.dom)
 
         const elements = fiber.props.children
-        let index = 0
+        let i = 0
         let prevSibling = null
 
-        while (index < elements.length) {
-            const element = elements[index]
-
+        // map each children
+        // the first child becomes the child of the current fiber
+        // the each child become the sibling of the previously defined fiber
+        while (i < elements.length) {
             const newFiber : IFiber = {
-                type: element.type,
-                props: element.props,
+                type: elements[i].type,
+                props: elements[i].props,
                 parent: fiber,
                 dom: null,
             }
 
             // if first child, set as the current fiber main child
-            if (index === 0) {
+            if (i == 0) {
                 fiber.child = newFiber
-            // if not the first one, set as sibling of the previous fiber child
+            // if not the first one, set as a sibling of the previous fiber child
             } else {
                 if(prevSibling) prevSibling.sibling = newFiber
             }
     
             prevSibling = newFiber
-            index++
+            i++
         }
 
+        // return the child as the next unit of work
         if (fiber.child) {
             return fiber.child
         }
+
+        // if no child, then try to find a sibling or a sibling of one a the ancestors
         let nextFiber = fiber
         while (nextFiber) {
             if (nextFiber.sibling) {
                 return nextFiber.sibling
             }
-            nextFiber = nextFiber.parent
+            if(nextFiber.parent) nextFiber = nextFiber.parent
         }
     }
 }
 
+/** @jsx SPA.createElement */
+export const element = (
+    // @ts-expect-error
+    <div id="test" value="2">
+        <div>
+            hello
+            <span>spanValue</span>
+        </div>
+    </div>
+)
 
+document.body.onload = addToRoot // addToRoot;
 
-document.body.onload = addToRoot;
-
-function addToRoot() {
-    const root = document.body.querySelector("#root")
+function start(){
+    const root = document.body.querySelector("#root") as HTMLElement
     /** @jsx SPA.createElement */
     const element = (
         // @ts-expect-error
@@ -168,21 +186,22 @@ function addToRoot() {
             </div>
         </div>
     )
-    SPA.render(element, root as HTMLElement)
+    SPA.lazyRender(element, root)
+    // console.log(JSON.stringify(nextUnitOfWork))
+    requestIdleCallback(SPA.workLoop)
 }
 
-
-/*if(root) SPA.render(SPA.createElement(
-    "div", 
-    {id : 'test', value : '2'}, 
-    SPA.createElement(
-        "div",
-        null,
-        'hello',
-        SPA.createElement(
-            "span",
-            null,
-            "spanValue",
-        )
+function addToRoot() {
+    const root = document.body.querySelector("#root") as HTMLElement
+    /** @jsx SPA.createElement */
+    const element = (
+        // @ts-expect-error
+        <div id="test" value="2">
+            <div>
+                hello
+                <span>spanValue</span>
+            </div>
+        </div>
     )
-), root as HTMLElement)*/
+    SPA.render(element, root)
+}

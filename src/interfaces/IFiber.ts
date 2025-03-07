@@ -9,7 +9,7 @@ export interface IFiber extends ISPAElement {
     // with the ISPATextElement nodeValue prop being set to optional
     props: ISPAElement['props'] & Optional<Omit<ISPATextElement['props'], keyof ISPAElement['props']>>
     child?: IFiber
-    parent: IFiber
+    parent?: IFiber
     dom: HTMLElement | Text | null
     sibling?: IFiber
 }
