@@ -55,6 +55,10 @@ class SPA{
         container.appendChild(dom)
     }
 
+    static splitRender(){
+
+    }
+
     static createDom(fiber : IFiber) {
         const dom =
           fiber.type == "TEXT_ELEMENT"
@@ -64,16 +68,18 @@ class SPA{
         // updateDom(dom, {}, fiber.props)
       
         return dom
-      }
+    }
 
-    /*static workLoop(deadline : IdleDeadline) {
+    static nextUnitOfWork : undefined | IFiber = undefined
+
+    static workLoop(deadline : IdleDeadline) {
         let shouldYield = false
-        while (nextUnitOfWork && !shouldYield) {
-          nextUnitOfWork = this.performUnitOfWork(nextUnitOfWork)
+        while (this.nextUnitOfWork && !shouldYield) {
+          this.nextUnitOfWork = this.performUnitOfWork(this.nextUnitOfWork)
           shouldYield = deadline.timeRemaining() < 1
         }
         requestIdleCallback(this.workLoop)
-    }*/
+    }
 
     static performUnitOfWork(fiber : IFiber) {
         if (!fiber.dom) fiber.dom = this.createDom(fiber)
